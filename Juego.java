@@ -13,7 +13,6 @@ public class Juego {
     private Tablero tablero;
     private final int NUMERO_JUGADORES = 2;
     private final char[] SIMBOLOS = {'#', '*', '@' , '$'};
-    private final String GUARDAR_JUEGO = "**";
     private final Jugador[] JUGADORES;
 
     // Clase privada Tablero para gestionar el propio tablero
@@ -86,15 +85,29 @@ public class Juego {
         /**
          * Metodo que sirve para imprimir el tablero
          */
-        public void imprimirTablero(){
-            for (int i = 0; i<tablero.length; i++){
-                for (int j = 0; j<tablero[0].length; j++){
-                    String celda = (tablero[i][j] == null) ? " " : tablero[i][j];
+        public void imprimirTablero() {
+            int tam = 0;
+            for (String s : this.PAREDES) {
+                if (s != null && s.length() > tam) {
+                    tam = s.length();
+                }
+            }
+
+            for (int i = 0; i < tablero.length; i++) {
+                for (int j = 0; j < tablero[0].length; j++) {
+                    String celda = tablero[i][j];
+                    if (celda == null) {
+                        celda = " ".repeat(tam);
+                    } 
+                    else if (celda.length() < tam) {
+                        celda = String.format(" " + celda + " ");
+                    }
                     System.out.print(celda + " ");
                 }
-                System.out.println("");
+                System.out.println();
             }
         }
+        
 
         /**
          * Metodo que comprueba si el tablero esta completo o no
@@ -146,8 +159,66 @@ public class Juego {
          */
         // TODO 
         public int comprobarCuadradosCompletos(char simbolo){
-            return 0;
+            int casilla = 0;
+            int[] empezar = {1,1};
+            for(int i=empezar[0]; i<this.tablero.length; i+=2){
+                for (int j = empezar[1]; j<this.tablero[0].length; j+=2){
+                    if (tablero[i][j] == null){
+                        if (comprobarCasilla(i, j)){
+                            this.tablero[i][j] = String.valueOf(simbolo);
+                            casilla++;
+                        }
+                    }
+                }
+            }
+            return casilla;
         }
+
+        /**
+         * Metodo para comprobar si una casilla esta rodeada de palos o no
+         * @param i fila de la tabla
+         * @param j columna de la tabla
+         * @return true si esta completa o false si no lo esta
+         */
+        private boolean comprobarCasilla(int i, int j) {
+            boolean completa = true;
+            String paredes = "";
+            
+            // Construir la cadena de paredes a partir del vector PAREDES
+            for (String p : this.PAREDES) {
+                paredes += p;
+            }
+            // Comprobar la celda de arriba
+            if (i > 0) {
+                String arriba = tablero[i - 1][j];
+                if (!paredes.contains(arriba)) {
+                    completa = false;
+                }
+            }
+            // Comprobar la celda de abajo
+            if (i < tablero.length - 1) {
+                String abajo = tablero[i + 1][j];
+                if (!paredes.contains(abajo)) {
+                    completa = false;
+                }
+            }
+            // Comprobar la celda de la izquierda
+            if (j > 0) {
+                String izquierda = tablero[i][j - 1];
+                if (!paredes.contains(izquierda)) {
+                    completa = false;
+                }
+            }
+            // Comprobar la celda de la derecha
+            if (j < tablero[0].length - 1) {
+                String derecha = tablero[i][j + 1];
+                if (!paredes.contains(derecha)) {
+                    completa = false;
+                }
+            }
+            return completa;
+        }
+        
         
     }
 
@@ -285,7 +356,7 @@ public class Juego {
         Jugador jugador = jugadorActual();
         char simbolo = jugador.getSimbolo();
         int casillasGanadas = this.tablero.comprobarCuadradosCompletos(simbolo);
-        if(casillasGanadas !=0){
+        if(casillasGanadas !=0 ){
             this.anyadirCasillasGanadas(casillasGanadas);
         }
         else{
@@ -308,8 +379,9 @@ public class Juego {
      */
     public Jugador jugadorActual(){
         for (Jugador j : this.JUGADORES){
-            if (j.turnoJugador())
-                return j;
+            if (j.turnoJugador()){
+                return j; 
+            }
         }
         return null; 
     }
@@ -321,12 +393,11 @@ public class Juego {
     public void siguienteJugador(){
         boolean turnoCambiado = false;
         for (int i = 0; i<this.JUGADORES.length && !turnoCambiado; i++){
+            //Comprobamos si es su turno
             if (this.JUGADORES[i].turnoJugador()){
                 this.JUGADORES[i].alternarTurno();
-                if (i+1 == this.JUGADORES.length){
-                    this.JUGADORES[0].alternarTurno();
-                    turnoCambiado = true;
-                }
+                this.JUGADORES[(i+1) % this.NUMERO_JUGADORES].alternarTurno();
+                turnoCambiado = true;
             }
         }
     }
@@ -338,5 +409,13 @@ public class Juego {
         return (this.tablero.tableroIncompleto())? false : true;
     }
 
+    /**
+     * Metodo para imprimir los resultados de los jugadores
+     */
+    public void imprimirResultadosJugadores(){
+        for (Jugador j : this.JUGADORES){
+            System.out.println("Jugador " + j.getNumJugador() + ": " + j.getCasillasGanadas() + " casillas");
+        }
+    }
     
 }

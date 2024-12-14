@@ -66,7 +66,9 @@ public class laconquista {
             }
     
             boolean continuarJugando = true;
+
             while(continuarJugando){
+
                 boolean juegoFinalizado = juego.juegoCompletado();
                 System.out.println(" ---------- Cargando Partida ---------- ");
 
@@ -75,7 +77,6 @@ public class laconquista {
                     boolean casillaCorrecta = false;
                     juego.imprimirTablero();
                     do{
-                        System.out.println(juego.jugadorActual());
                         System.out.print("[Jugador " + (juego.jugadorActual().getNumJugador()) + "] Proximo palito: ");
                         palo = in.nextLine(); 
                         casillaCorrecta = (palo.equals("**") ||juego.comprobarCasillaSeleccionada(palo));
@@ -95,6 +96,11 @@ public class laconquista {
                         //TODO AFTER
                     }
                 }
+                juego.imprimirResultadosJugadores();
+                System.out.println("¡Finalizo el juego!");
+                juego.imprimirResultadosJugadores();
+                System.out.print("¿Quieres jugar de nuevo?: S/N ");
+                in.nextLine();
             }
         }
     }    
