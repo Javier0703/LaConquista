@@ -2,7 +2,6 @@
  * Copyright Universidad Valladolid
  */
 import java.util.HashSet;
-import java.util.Random;
 import java.util.Set;
 /*
  * Implementacion de la clase Juego
@@ -11,7 +10,7 @@ import java.util.Set;
 public class Juego {
 
     private Tablero tablero;
-    private final int NUMERO_JUGADORES = 3;
+    private int NUMERO_JUGADORES;
     private final char[] SIMBOLOS = {'#', '*', '@' , '$'};
     private final Jugador[] JUGADORES;
 
@@ -293,24 +292,27 @@ public class Juego {
      * @param b dimension de las columnas
      * @throws IllegalArgumentException si hay menos de 2 JUGADORES
      * @throws IllegalArgumentException si los JUGADORES tienen SIMBOLOS iguales
+     * @throws IllegalArgumentException si el turno del jugador es mayor o igual al numero de ellos
      */
-    public Juego(int a, int b){
+    public Juego(int a, int b, int jugadores, int turnoJugador){
         //Comprobamos que haya al menos 2 JUGADORES y que no tengan simbolos repetidos
-        if(this.NUMERO_JUGADORES< 2 || this.NUMERO_JUGADORES > 4) 
+        if(jugadores< 2 || jugadores > 4) 
             throw new IllegalArgumentException("El numero de JUGADORES debe ser entre 2 - 4");
         if(tieneDuplicados(this.SIMBOLOS))
             throw new IllegalArgumentException("Los JUGADORES tienen SIMBOLOS iguales");
+        if(turnoJugador>=jugadores)
+            throw new IllegalArgumentException("El turno de un jugador no puede ser mayor o igual al numero de ellos");
 
         this.tablero = new Tablero(a,b);
-        this.JUGADORES = new Jugador[this.NUMERO_JUGADORES];
+        this.NUMERO_JUGADORES = jugadores;
+        this.JUGADORES = new Jugador[jugadores];
 
         //Inicializamos los JUGADORES
         for (int i = 0; i<this.NUMERO_JUGADORES; i++)
             this.JUGADORES[i] = new Jugador(i + 1, this.SIMBOLOS[i]);
-        
-        //Seleccionamos un jugador aleatorio para que comienze el juego:
-        Random random = new Random();
-        this.JUGADORES[random.nextInt(this.JUGADORES.length)].alternarTurno();
+
+        //Alternamos el turno al jugador para que comience
+        this.JUGADORES[turnoJugador].alternarTurno();
     }
 
     /**
@@ -389,7 +391,6 @@ public class Juego {
     /**
      * Pasamos a que el siguinte jugador sea el activo.
      */
-    //TODO REMODELAR
     public void siguienteJugador(){
         boolean turnoCambiado = false;
         for (int i = 0; i<this.JUGADORES.length && !turnoCambiado; i++){
@@ -432,5 +433,72 @@ public class Juego {
         }
         return tablero+jugadorInfo;
     }
-    
+
+    /**
+     * Metodo para guardad la partida en el fichero
+     * @return tablero actual de la partida del estilo
+     *  - Tablero del juego
+     *  - Dimension del tablero (34) --> 3x4
+     *  - Numero de jugadores y el jugador activo
+     */
+    public String guardarPartida(){
+        String tablero = "";
+        for (int i = 0; i<this.tablero.tablero.length; i++){
+            for (int j = 0; j<this.tablero.tablero[0].length; j++){
+                if (this.tablero.tablero[i][j] == null)
+                    tablero += " ";
+                else if(this.tablero.tablero[i][j] == "---")
+                    tablero += "-";
+                else
+                    tablero += this.tablero.tablero[i][j];
+            }
+        }
+        int filas = (this.tablero.tablero.length - 1) / 2;
+        int columnas = (this.tablero.tablero[0].length -1 )/ 2;
+        return String.valueOf(filas+"x"+columnas)+"\n"+tablero+"\n"+
+            this.NUMERO_JUGADORES+","+(this.jugadorActual().getNumJugador()-1);
+    }
+
+    /**
+     * Metodo para cargarla partica
+     * @param tab El tablero de la partida a cargar
+     */
+    public void cargarPartida(String tab){
+        int centinela = 0;
+        for(int i = 0; i<this.tablero.tablero.length; i++){
+            for (int j = 0; j<this.tablero.tablero[0].length; j++){
+                char casilla = tab.charAt(centinela);
+                if (casilla != ' '){
+                    if(casilla == '-')
+                        this.tablero.tablero[i][j] = "---";
+                    else
+                        this.tablero.tablero[i][j] = String.valueOf(casilla);
+                        if (casillaAcertada(casilla)){
+                            boolean encontrado = false;
+                            for(int ju = 0; ju<this.JUGADORES.length && !encontrado; ju++){
+                                if (this.JUGADORES[ju].getSimbolo() == casilla){
+                                    this.JUGADORES[ju].incrementarCasillas(1);
+                                    encontrado = true;
+                                }
+                            }      
+                        }
+                }
+                centinela++;    
+            }
+        }
+    }
+
+    /**
+     * Metodo para saber si una casilla del tablero guardado es caislla guardada
+     * @param casilla Casilla a comprobar
+     * @return true si es verdad o false si no lo es;
+     */
+    private boolean casillaAcertada(char casilla){
+        boolean encontrado = false;
+        for(char c : this.SIMBOLOS){
+            if (c == casilla)
+                encontrado = true;
+        }
+        return encontrado;
+    }
 }

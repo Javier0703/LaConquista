@@ -5,6 +5,11 @@ import java.util.*;
 import java.io.*;
 import java.util.regex.Pattern;
 import java.text.SimpleDateFormat;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 
 /**
  * Implementacion del Juego de La Conquista
@@ -13,9 +18,12 @@ import java.text.SimpleDateFormat;
 public class LaConquista {
     public static void main(String[] args){
         String ficheroResultados = "ficheros/resultados.txt";
-        boolean play = true;
+        String ficheroPartidaGuardada = "ficheros/partidaGuardada.txt";
+        boolean play = true; int i; Random random = new Random();
+        int numeroJugadores = 2;
+        int turnoJuador = random.nextInt(numeroJugadores);
         Scanner in = new Scanner(System.in);
-        int i;
+
         do{
             do {
                 String linea = "---------------------------";
@@ -34,8 +42,7 @@ public class LaConquista {
                     newGame = true;
                     break;
                 case 2:
-                    // Cargar Partida
-                    System.out.println("Cargar Partida (Funcionalidad no implementada)");
+                    loadGame = true;
                     break;
                 case 3:
                     verResultados(ficheroResultados);
@@ -51,12 +58,10 @@ public class LaConquista {
 
             if(newGame || loadGame){
                 if (newGame)
-                    juego = newGame(in);
-                //CARGAMOS EL JUEGO
-                else{
-                    juego = new Juego(2, 5);
-                }
-        
+                    juego = newGame(in, numeroJugadores, turnoJuador);
+                else
+                    juego = loadGame(ficheroPartidaGuardada);
+
                 boolean continuarJugando = true;
                 while(continuarJugando){
     
@@ -84,9 +89,9 @@ public class LaConquista {
                         }
                         //GUARDAR PARTIDA
                         else{
-                            //VOLVER AL MENU INICIAL
-                            //GUARDAR PARTIDA
-                            //VOLVER AL MENU
+                            guardarPartida(juego, ficheroPartidaGuardada);
+                            continuarJugando = false;
+                            juegoFinalizado = true;
                         }
                     }
 
@@ -102,9 +107,10 @@ public class LaConquista {
                     while(!(st.equals("S") || st.equals("N")));
 
                     if(st.equals("S")){
-                        juego = newGame(in);
+                        juego = newGame(in, numeroJugadores, turnoJuador);
                     }
-                    continuarJugando = false;
+                    else
+                        continuarJugando = false;
                 }
             }
         }
@@ -117,7 +123,7 @@ public class LaConquista {
      * @param in Scanner para hacer los inputs
      * @return nuevo Juego
      */
-    public static Juego newGame(Scanner in){
+    public static Juego newGame(Scanner in, int numeroJugadores, int turnoJugador){
         int filas = 0;
         int columnas = 0;
         Pattern CODIGO_DUENO = Pattern.compile("\\d+x\\d+");
@@ -130,8 +136,40 @@ public class LaConquista {
                 columnas = Character.getNumericValue(size.charAt(2));
             } 
         }
-        return new Juego(filas, columnas);
+        return new Juego(filas, columnas, numeroJugadores, turnoJugador);
     }
+
+    public static Juego loadGame(String archivo) {
+        try (Scanner datos = new Scanner(new File(archivo), "UTF-8")) {
+            if(!datos.hasNextLine()){
+                throw new IllegalStateException("No se encuentran partidas guardadas");
+            }
+            String dimension = datos.nextLine();
+            String tablero = datos.nextLine();  
+            String jugadores = datos.nextLine();
+            String[] dimensiones = dimension.split("x");
+            int filas = Integer.parseInt(dimensiones[0].trim());
+            int columnas = Integer.parseInt(dimensiones[1].trim());
+            String[] datosJugadores = jugadores.split(",");
+            int numeroJugadores = Integer.parseInt(datosJugadores[0].trim());
+            int turnoJugador = Integer.parseInt(datosJugadores[1].trim());
+            Juego j = new Juego(filas, columnas, numeroJugadores, turnoJugador);
+            j.cargarPartida(tablero);
+            return j;
+    
+        } 
+        catch (FileNotFoundException e) {
+            System.out.println("No se encontró el fichero: " + archivo);
+        } 
+        catch (NumberFormatException e) {
+            System.out.println("Error al convertir un dato numérico: " + e.getMessage());
+        } 
+        catch (IllegalArgumentException e) {
+            System.out.println("Formato de archivo inválido: " + e.getMessage());
+        }
+        return null;
+    }
+    
 
 
     /**
@@ -144,7 +182,6 @@ public class LaConquista {
         String infoPartida = j.guardarResultado();
         String info = fechaFormateada + " " + infoPartida;
         try{
-            //ADD ON ficheros/resultados.txt the info
             PrintWriter escritor = new PrintWriter(new FileWriter(archivo, true));
             escritor.println(info);
             escritor.close();
@@ -163,9 +200,27 @@ public class LaConquista {
             while (datos.hasNextLine()) {
                 System.out.println(datos.nextLine());
             }
+            datos.close();
         } 
         catch (FileNotFoundException e) {
             System.out.println("No se encontró el fichero");
+        }
+    }
+
+    /**
+     * Metodo para guardar una partida
+     * @param j Juego que se guerda
+     * @param archivo El archivo donde se guardara la partida
+     */
+    public static void guardarPartida(Juego j, String archivo) {
+        try {
+            String info = j.guardarPartida();
+            Path path = Paths.get(archivo);
+            Files.write(path, info.getBytes(StandardCharsets.UTF_8),
+                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        } 
+        catch (IOException e) {
+            System.err.println("Error al escribir en el archivo: " + e.getMessage());
         }
     }
 }
