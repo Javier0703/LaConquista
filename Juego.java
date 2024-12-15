@@ -11,7 +11,7 @@ import java.util.Set;
 public class Juego {
 
     private Tablero tablero;
-    private final int NUMERO_JUGADORES = 2;
+    private final int NUMERO_JUGADORES = 3;
     private final char[] SIMBOLOS = {'#', '*', '@' , '$'};
     private final Jugador[] JUGADORES;
 
@@ -416,6 +416,21 @@ public class Juego {
         for (Jugador j : this.JUGADORES){
             System.out.println("Jugador " + j.getNumJugador() + ": " + j.getCasillasGanadas() + " casillas");
         }
+    }
+
+    /**
+     * Metodo para guardar la informacion en el txt
+     * @return String con la informacion de la partida
+     */
+    public String guardarResultado(){
+        int filas = this.tablero.tablero.length - 3;
+        int columnas = this.tablero.tablero[0].length - 3;
+        String tablero = "Tam "+filas+"x"+columnas+"\t";
+        String jugadorInfo = "";
+        for (Jugador j : this.JUGADORES){
+            jugadorInfo+="Jugador "+j.getNumJugador()+": "+j.getCasillasGanadas()+ "  |  ";
+        }
+        return tablero+jugadorInfo;
     }
     
 }
