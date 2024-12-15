@@ -12,6 +12,8 @@ public class Juego {
     private Tablero tablero;
     private int NUMERO_JUGADORES;
     private final char[] SIMBOLOS = {'#', '*', '@' , '$'};
+    private final int MIN_JUGADORES = 2;
+    private final int MAX_JUGADORES = 4;
     private final Jugador[] JUGADORES;
 
     // Clase privada Tablero para gestionar el propio tablero
@@ -86,12 +88,12 @@ public class Juego {
          */
         public void imprimirTablero() {
             int tam = 0;
+            //Seleccionamos el tamaño maximo de las paredes (centrar columnas)
             for (String s : this.PAREDES) {
                 if (s != null && s.length() > tam) {
                     tam = s.length();
                 }
             }
-
             for (int i = 0; i < tablero.length; i++) {
                 for (int j = 0; j < tablero[0].length; j++) {
                     String celda = tablero[i][j];
@@ -107,7 +109,6 @@ public class Juego {
             }
         }
         
-
         /**
          * Metodo que comprueba si el tablero esta completo o no
          * @return True si el tablero esta incompleto o false si esta completo
@@ -155,8 +156,8 @@ public class Juego {
 
         /**
          * Metodo para comprobar si se han creado cajas y agregarlas
+         * @param simbolo Simbolo que se coloca en la cuadricula completa
          */
-        // TODO 
         public int comprobarCuadradosCompletos(char simbolo){
             int casilla = 0;
             int[] empezar = {1,1};
@@ -296,7 +297,7 @@ public class Juego {
      */
     public Juego(int a, int b, int jugadores, int turnoJugador){
         //Comprobamos que haya al menos 2 JUGADORES y que no tengan simbolos repetidos
-        if(jugadores< 2 || jugadores > 4) 
+        if(jugadores< this.MIN_JUGADORES || jugadores > this.MAX_JUGADORES) 
             throw new IllegalArgumentException("El numero de JUGADORES debe ser entre 2 - 4");
         if(tieneDuplicados(this.SIMBOLOS))
             throw new IllegalArgumentException("Los JUGADORES tienen SIMBOLOS iguales");

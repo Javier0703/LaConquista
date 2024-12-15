@@ -19,103 +19,103 @@ public class LaConquista {
     public static void main(String[] args){
         String ficheroResultados = "ficheros/resultados.txt";
         String ficheroPartidaGuardada = "ficheros/partidaGuardada.txt";
-        boolean play = true; int i; Random random = new Random();
-        int numeroJugadores = 2;
-        int turnoJuador = random.nextInt(numeroJugadores);
+        boolean seguirJugando = true; 
+        int i; 
+        int numeroJugadores = 3;
+        int turnoJuador = new Random().nextInt(numeroJugadores);
         Scanner in = new Scanner(System.in);
 
         do{
             do {
-                String linea = "---------------------------";
-                System.out.println("Bienvenido a ¡La Conquista!" + "\n" + linea);
-                System.out.println("1. Nuevo Juego\n2. Cargar Partida\n3. Ver Resultados\n4. Salir\n" + linea);
-                System.out.print("Elige una opcion: ");
+                imprimirTablon();
                 i = in.nextInt();
-                if (i < 1 || i > 4) {
+                if (i < 1 || i > 4)
                     System.out.println("Opcion no valida (1 - 4)");
-                }
             } while (i < 1 || i > 4);
-
-            boolean newGame = false; boolean loadGame = false;
+            
             switch (i) {
                 case 1:
-                    newGame = true;
+                    Juego juego = newGame(in, numeroJugadores, turnoJuador);
+                    jugar(juego, in, ficheroResultados, ficheroPartidaGuardada, numeroJugadores, turnoJuador);
                     break;
                 case 2:
-                    loadGame = true;
+                    Juego juegoCargado = loadGame(ficheroPartidaGuardada);
+                    jugar(juegoCargado, in, ficheroResultados, ficheroPartidaGuardada, numeroJugadores, turnoJuador);
                     break;
                 case 3:
                     verResultados(ficheroResultados);
-                    play = false;
                     break;
                 case 4:
                     System.out.println("Gracias por Jugar, hasta pronto");
-                    play = false;
+                    seguirJugando = false;
+                    in.close();
                     break;
             }
-    
-            Juego juego;
+        }
+        while(seguirJugando);
+    }  
 
-            if(newGame || loadGame){
-                if (newGame)
-                    juego = newGame(in, numeroJugadores, turnoJuador);
-                else
-                    juego = loadGame(ficheroPartidaGuardada);
+    /**
+     * Metodo para imprimir el tablon para seleccionar el modo de juego
+     */
+    public static void imprimirTablon(){
+        String linea = "---------------------------";
+        System.out.println("Bienvenido a ¡La Conquista!");
+        System.out.println(linea);
+        System.out.println("1. Nuevo Juego");
+        System.out.println("2. Cargar Partida");
+        System.out.println("3. Ver Resultados");
+        System.out.println("4. Salir");
+        System.out.println(linea);
+        System.out.print("Elige una opcion: ");
+    }
 
-                boolean continuarJugando = true;
-                while(continuarJugando){
-    
-                    boolean juegoFinalizado = juego.juegoCompletado();
-                    System.out.println(" ---------- Cargando Partida ---------- ");
-    
-                    while(!juegoFinalizado){
-                        String palo = "";
-                        boolean casillaCorrecta = false;
+    public static void jugar(Juego juego, Scanner in, String ficheroResultados, String ficheroPartidaGuardada, int numeroJugadores, int turnoJuador){
+        boolean continuarJugando = true;
+        while(continuarJugando){
+            boolean juegoFinalizado = juego.juegoCompletado();
+            while(!juegoFinalizado){
+                String palo = "";
+                boolean casillaCorrecta = false;
+                juego.imprimirTablero();
+
+                do{
+                    System.out.print("[Jugador " + (juego.jugadorActual().getNumJugador()) + "] Proximo palito: ");
+                    palo = in.nextLine(); 
+                    casillaCorrecta = (palo.equals("**") ||juego.comprobarCasillaSeleccionada(palo));
+                    if(!casillaCorrecta){
+                        System.out.println("Casilla no disponible. Seleccione otra");
+                    }
+                }
+                while(!casillaCorrecta);
+                if(palo.equals("**")){
+                    guardarPartida(juego, ficheroPartidaGuardada);
+                    juegoFinalizado = true;
+                }
+                else{
+                    juego.actualizarDatosJuego();
+                    juegoFinalizado = juego.juegoCompletado();
+                    if(juegoFinalizado){
+                        System.out.println("¡Finalizo el juego!");
                         juego.imprimirTablero();
-                        do{
-                            System.out.print("[Jugador " + (juego.jugadorActual().getNumJugador()) + "] Proximo palito: ");
-                            palo = in.nextLine(); 
-                            casillaCorrecta = (palo.equals("**") ||juego.comprobarCasillaSeleccionada(palo));
-                            if(!casillaCorrecta){
-                                System.out.println("Casilla no disponible. Seleccione otra");
-                            }
-                        }
-                        while(!casillaCorrecta);
-    
-                        //Comprobamos datos del juego
-                        if(!palo.equals("**")){
-                            juego.actualizarDatosJuego();
-                            juegoFinalizado = juego.juegoCompletado();
-                        }
-                        //GUARDAR PARTIDA
-                        else{
-                            guardarPartida(juego, ficheroPartidaGuardada);
-                            continuarJugando = false;
-                            juegoFinalizado = true;
-                        }
+                        anyadirResultado(juego, ficheroResultados);
+                        juego.imprimirResultadosJugadores(); 
                     }
-
-                    //ESTO DEBE SALIR SIEMPRE MENOS QUE GUARDEMOS UNA PARTIDA
-                    System.out.println("¡Finalizo el juego!");
-                    anyadirResultado(juego, ficheroResultados);
-                    juego.imprimirResultadosJugadores();
-                    String st = "";
-                    do{
-                        System.out.print("¿Quieres jugar de nuevo?: S/N ");
-                        st = in.nextLine();
-                    }
-                    while(!(st.equals("S") || st.equals("N")));
-
-                    if(st.equals("S")){
-                        juego = newGame(in, numeroJugadores, turnoJuador);
-                    }
-                    else
-                        continuarJugando = false;
+                    
                 }
             }
+            String st = "";
+            do{
+                System.out.print("¿Quieres jugar de nuevo?: S/N ");
+                st = in.nextLine();
+            }
+            while(!(st.equals("S") || st.equals("N")));
+
+            if(st.equals("S")){
+                juego = newGame(in, numeroJugadores, turnoJuador);
+            }
+            else continuarJugando = false;
         }
-        while(play);
-        in.close();
     }
 
     /**
@@ -139,6 +139,11 @@ public class LaConquista {
         return new Juego(filas, columnas, numeroJugadores, turnoJugador);
     }
 
+    /**
+     * Metodo
+     * @param archivo
+     * @return
+     */
     public static Juego loadGame(String archivo) {
         try (Scanner datos = new Scanner(new File(archivo), "UTF-8")) {
             if(!datos.hasNextLine()){
@@ -169,8 +174,6 @@ public class LaConquista {
         }
         return null;
     }
-    
-
 
     /**
      * Metodo para añadir un nuevo resultado finalizado al txt.
