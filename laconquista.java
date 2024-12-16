@@ -21,8 +21,7 @@ public class LaConquista {
         String ficheroPartidaGuardada = "ficheros/partidaGuardada.txt";
         boolean seguirJugando = true; 
         int i; 
-        int numeroJugadores = 3;
-        int turnoJuador = new Random().nextInt(numeroJugadores);
+        int numeroJugadores = 2;
         Scanner in = new Scanner(System.in);
 
         do{
@@ -35,12 +34,13 @@ public class LaConquista {
             
             switch (i) {
                 case 1:
-                    Juego juego = newGame(in, numeroJugadores, turnoJuador);
-                    jugar(juego, in, ficheroResultados, ficheroPartidaGuardada, numeroJugadores, turnoJuador);
+                    Juego juego = newGame(in, numeroJugadores);
+                    jugar(juego, in, ficheroResultados, ficheroPartidaGuardada, numeroJugadores);
                     break;
                 case 2:
                     Juego juegoCargado = loadGame(ficheroPartidaGuardada);
-                    jugar(juegoCargado, in, ficheroResultados, ficheroPartidaGuardada, numeroJugadores, turnoJuador);
+                    if (juegoCargado!= null)
+                        jugar(juegoCargado, in, ficheroResultados, ficheroPartidaGuardada, numeroJugadores);
                     break;
                 case 3:
                     verResultados(ficheroResultados);
@@ -70,7 +70,16 @@ public class LaConquista {
         System.out.print("Elige una opcion: ");
     }
 
-    public static void jugar(Juego juego, Scanner in, String ficheroResultados, String ficheroPartidaGuardada, int numeroJugadores, int turnoJuador){
+    
+    /**
+     * Metodo que se ejecuta una vez tengamos el objeto juebo
+     * @param juego Objeto de tipo Juego
+     * @param in Escaner Scanner
+     * @param ficheroResultados sring con la direccion del fichero que los resultadoa de la partida
+     * @param ficheroPartidaGuardada string con la direccion del fichero de la partida guardada
+     * @param numeroJugadores Numero de jugadores
+     */
+    public static void jugar(Juego juego, Scanner in, String ficheroResultados, String ficheroPartidaGuardada, int numeroJugadores){
         boolean continuarJugando = true;
         while(continuarJugando){
             boolean juegoFinalizado = juego.juegoCompletado();
@@ -112,7 +121,7 @@ public class LaConquista {
             while(!(st.equals("S") || st.equals("N")));
 
             if(st.equals("S")){
-                juego = newGame(in, numeroJugadores, turnoJuador);
+                juego = newGame(in, numeroJugadores);
             }
             else continuarJugando = false;
         }
@@ -123,35 +132,48 @@ public class LaConquista {
      * @param in Scanner para hacer los inputs
      * @return nuevo Juego
      */
-    public static Juego newGame(Scanner in, int numeroJugadores, int turnoJugador){
+    public static Juego newGame(Scanner in, int numeroJugadores){
         int filas = 0;
         int columnas = 0;
         Pattern CODIGO_DUENO = Pattern.compile("\\d+x\\d+");
         in.nextLine();
-        while (filas < 2 || columnas < 2) {
-            System.out.print("Genera una nueva dimension de tablero AxB (minimo 2x2): ");
+        while (filas < 2 || columnas < 2 || filas > 9 || columnas > 9) {
+            System.out.print("Genera una nueva dimension de tablero AxB (minimo 2x2, maximo 9x9): ");
             String size = in.nextLine();
             if (CODIGO_DUENO.matcher(size).matches()) {
                 filas = Character.getNumericValue(size.charAt(0));
                 columnas = Character.getNumericValue(size.charAt(2));
             } 
         }
-        return new Juego(filas, columnas, numeroJugadores, turnoJugador);
+        int turno = new Random().nextInt(numeroJugadores);
+        return new Juego(filas, columnas, numeroJugadores, turno);
     }
 
     /**
-     * Metodo
-     * @param archivo
-     * @return
+     * Metodo que sirve paara cargar un juego.
+     * @param archivo Archivo donde esta el juego
+     * @return Objeto tipo Juego, o null si esta vacio
      */
     public static Juego loadGame(String archivo) {
         try (Scanner datos = new Scanner(new File(archivo), "UTF-8")) {
             if(!datos.hasNextLine()){
-                throw new IllegalStateException("No se encuentran partidas guardadas");
+               System.out.println("No se encuentran partidas guardadas");
+               return null;
             }
             String dimension = datos.nextLine();
             String tablero = datos.nextLine();  
             String jugadores = datos.nextLine();
+            String patternDim = "\\d+x\\d+";
+            String patternJug = "\\d+,\\d+";
+            String msg = "Tablero corrupto, recomendamos borrarlo";
+            if (!Pattern.matches(patternDim, dimension)){
+                System.out.println(msg);
+                return null;
+            }
+            if (!Pattern.matches(patternJug, jugadores)){
+                System.out.println(msg);
+                return null;
+            }
             String[] dimensiones = dimension.split("x");
             int filas = Integer.parseInt(dimensiones[0].trim());
             int columnas = Integer.parseInt(dimensiones[1].trim());
@@ -178,7 +200,7 @@ public class LaConquista {
     /**
      * Metodo para añadir un nuevo resultado finalizado al txt.
      */
-    public static void anyadirResultado(Juego j, String archivo){
+    private static void anyadirResultado(Juego j, String archivo){
         Date diaHoy = new Date();
         SimpleDateFormat formato = new SimpleDateFormat("dd/mm/yyyy HH:mm:ss z yyyy", new Locale("es", "ES"));
         String fechaFormateada = formato.format(diaHoy);
@@ -215,7 +237,7 @@ public class LaConquista {
      * @param j Juego que se guerda
      * @param archivo El archivo donde se guardara la partida
      */
-    public static void guardarPartida(Juego j, String archivo) {
+    private static void guardarPartida(Juego j, String archivo) {
         try {
             String info = j.guardarPartida();
             Path path = Paths.get(archivo);
@@ -244,7 +266,7 @@ public class LaConquista {
         private class Tablero{
             private final String[] PAREDES = {"|", "---"};
             private final String[] CARACTERES_INICIALES = {"AZ", "az", "09"};
-            private final char ESQUINA = '&';
+            private final char ESQUINA = 'º';
             private String caracteresConcatenados;
             private String[][] tablero;
 
@@ -355,7 +377,6 @@ public class LaConquista {
              * @return true si la ha encontrado o false si no;
              */
             public boolean comprobarCasillaSeleccionada(String s){
-                if (s.length()!=1) return false;
                 if (this.caracteresConcatenados.indexOf(s) == -1) return false;
                 boolean encontrado = false;
                 for(int i = 0; i<this.tablero.length && !encontrado; i++){
@@ -447,7 +468,7 @@ public class LaConquista {
         }
 
         //Clase privada Jugador, para gestionar sus propiedades:
-        class Jugador{
+        private class Jugador{
 
             private int numJugador;
             private int casillasGanadas = 0;
@@ -563,7 +584,7 @@ public class LaConquista {
          * Metodo para imprime el tablero del juego
          */
         public void imprimirTablero(){
-            this.tablero.imprimirTablero();;
+            this.tablero.imprimirTablero();
         }
 
         /**
@@ -572,7 +593,10 @@ public class LaConquista {
          * @return true si es correcta falsa si no (no esta disponible)
          */
         public boolean comprobarCasillaSeleccionada(String s){
-            return this.tablero.comprobarCasillaSeleccionada(s);
+            if (s.length()!=1) 
+                return false;
+            else 
+                return this.tablero.comprobarCasillaSeleccionada(s);
         }
 
         /**
